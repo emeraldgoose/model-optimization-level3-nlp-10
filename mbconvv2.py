@@ -1,3 +1,7 @@
+"""
+    Reference: https://github.com/d-li14/efficientnetv2.pytorch/blob/main/effnetv2.py
+"""
+
 import math
 
 import torch
