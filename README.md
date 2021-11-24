@@ -12,7 +12,7 @@ __all__ = [
 ```
 
 ## Model Architecture
-
+```
 idx |   n |     params |          module |            arguments |   in_channel |   out_channel
 ----------------------------------------------------------------------------------------------
   0 |   1 |        696 |            Conv |           [24, 3, 2] |            3           24
@@ -26,3 +26,4 @@ idx |   n |     params |          module |            arguments |   in_channel |
   8 |   1 |          0 |   GlobalAvgPool |                   [] |         1280         1280
   9 |   1 |          0 |         Flatten |                   [] |         1280         1280
  10 |   1 |     12,810 |          Linear |                 [10] |         1280           10
+```
