@@ -26,7 +26,7 @@ import pickle
 
 EPOCH = 100
 OBJ_CALLED = 0
-DATA_PATH = "/opt/ml/data"  # type your data path here that contains test, train and val directories
+DATA_PATH = "/opt/ml/data_0.2"  # type your data path here that contains test, train and val directories
 RESULT_MODEL_PATH = "./result_model.pt" # result model will be saved in this path
 HYPER_PARAM_PATH = "/opt/ml/code/configs/hyperparams"
 RESULT_ROOT = "/opt/ml/code/results"
@@ -277,7 +277,7 @@ def objective(trial: optuna.trial.Trial, device, study_name) -> Tuple[float, int
 
     model_info(model, verbose=True)
 
-    summary = {"data":data_config, "model":model_config}
+    summary = {"data":data_config, "model":model_config, "f1_score":f1_score, "param_nums": params_nums}
     
     results_path = os.path.join(RESULT_ROOT, study_name)
     try:
