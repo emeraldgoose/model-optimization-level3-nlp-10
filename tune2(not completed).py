@@ -3,9 +3,9 @@
 - Contact: placidus36@gmail.com, shinn1897@makinarocks.ai
 """
 
-# 1. valid가 2번 돌아가는 거
-# 2. worker 개수 8로 수정해주고
-# 3. 데이터 저장할 수 있도록 수정해야함
+# 1. valid가 2번 돌아가는 거...? # trainer 파일도 수정 (if val_dataloader is not None)
+# 2. worker 개수 8로 수정해주고 (completed) # dataloader 파일 수정 (n_workers = 8)
+# 3. 데이터 저장할 수 있도록 수정해야함 (completed)
 
 import optuna
 import torch
@@ -22,11 +22,14 @@ import argparse
 
 import os
 import yaml
+import pickle
 
 EPOCH = 100
+OBJ_CALLED = 0
 DATA_PATH = "/opt/ml/data"  # type your data path here that contains test, train and val directories
 RESULT_MODEL_PATH = "./result_model.pt" # result model will be saved in this path
 HYPER_PARAM_PATH = "/opt/ml/code/configs/hyperparams"
+RESULT_ROOT = "/opt/ml/code/results"
 
 class Module_maker():
 
@@ -180,7 +183,7 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     epochs = trial.suggest_int("epochs", *hyper_dic["epochs"])
     img_size = trial.suggest_categorical("img_size", hyper_dic["img_size"])
     n_select = trial.suggest_int("n_select", *hyper_dic["n_select"])
-    batch_size = trial.suggest_int("batch_size", *hyper_dic["batch_size"])[]
+    batch_size = trial.suggest_int("batch_size", *hyper_dic["batch_size"])
     
     return {
         "EPOCHS": epochs,
@@ -189,8 +192,7 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
         "BATCH_SIZE": batch_size,
     }
 
-def objective(trial: optuna.trial.Trial, device) -> Tuple[float, int, float]:
-    print("objective called !!")
+def objective(trial: optuna.trial.Trial, device, study_name) -> Tuple[float, int, float]:
     """Optuna objective.
     Args:
         trial
@@ -198,6 +200,9 @@ def objective(trial: optuna.trial.Trial, device) -> Tuple[float, int, float]:
         float: score1(e.g. accuracy)
         int: score2(e.g. params)
     """
+    global OBJ_CALLED
+    OBJ_CALLED += 1
+
     module_maker = Module_maker(trial)
     model_config: Dict[str, Any] = {}
 
@@ -265,13 +270,25 @@ def objective(trial: optuna.trial.Trial, device) -> Tuple[float, int, float]:
         verbose=1,
         model_path=RESULT_MODEL_PATH,
     )
-    trainer.train(train_loader, hyperparams["EPOCHS"], val_dataloader=val_loader)
+    
+    best_acc, best_f1 = trainer.train(train_loader, hyperparams["EPOCHS"]) 
     loss, f1_score, acc_percent = trainer.test(model, test_dataloader=val_loader)
     params_nums = count_model_params(model)
 
     model_info(model, verbose=True)
-    return f1_score, params_nums, mean_time
 
+    summary = {"data":data_config, "model":model_config}
+    
+    results_path = os.path.join(RESULT_ROOT, study_name)
+    try:
+        os.stat(results_path)
+    except:
+        os.mkdir(results_path)
+
+    with open(os.path.join(results_path,str(OBJ_CALLED)) + ".pkl", "wb") as f:
+        pickle.dump(summary, f)
+
+    return f1_score, params_nums, mean_time
 
 def get_best_trial_with_condition(optuna_study: optuna.study.Study) -> Dict[str, Any]:
     """Get best trial that satisfies the minimum condition(e.g. accuracy > 0.8).
@@ -308,7 +325,7 @@ def get_best_trial_with_condition(optuna_study: optuna.study.Study) -> Dict[str,
     return best_trial_
 
 
-def tune(gpu_id, storage: str = None):
+def tune(gpu_id, study_name, n_trial, storage: str = None):
     print("tune called!!!")
     if not torch.cuda.is_available():
         device = torch.device("cpu")
@@ -322,12 +339,13 @@ def tune(gpu_id, storage: str = None):
 
     study = optuna.create_study(
         directions=["maximize", "minimize", "minimize"],
-        study_name="automl101",
+        study_name= study_name,
         sampler=sampler,
         storage=rdb_storage,
         load_if_exists=True,
     )
-    study.optimize(lambda trial: objective(trial, device), n_trials=1)
+
+    study.optimize(lambda trial: objective(trial, device, study_name), n_trials=n_trial)
 
     pruned_trials = [
         t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED
@@ -353,10 +371,21 @@ def tune(gpu_id, storage: str = None):
     best_trial = get_best_trial_with_condition(study)
     print(best_trial)
 
+    df = study.trials_dataframe().rename(
+        columns={
+            "values_0": "acc_percent",
+            "values_1": "params_nums",
+            "values_2": "mean_time",
+        }
+    )
+
+    df.to_csv(os.path.join(RESULT_ROOT, study_name, study_name) + ".csv")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Optuna tuner.")
     parser.add_argument("--gpu", default=0, type=int, help="GPU id to use")
     parser.add_argument("--storage", default="", type=str, help="Optuna database storage path.")
+    parser.add_argument("--study_name", default = "study_temp", type = str, help = "study name")
+    parser.add_argument("--n_trial", default = "1", type = int, help = "how much you try")
     args = parser.parse_args()
-    tune(args.gpu, storage=args.storage if args.storage != "" else None)
+    tune(args.gpu, study_name = args.study_name, n_trial = args.n_trial, storage=args.storage if args.storage != "" else None)
