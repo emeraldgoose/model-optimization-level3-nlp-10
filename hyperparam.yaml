@@ -1,0 +1,5 @@
+epochs: [1, 1, 1]                     # [low, high, step]
+img_size: [96, 112, 168, 224, 324, 512] # possible img sizes candidates
+n_select: [0, 6, 2]                     # [low, high, step]
+batch_size : [16, 32, 16]               # [low, high, step]
+

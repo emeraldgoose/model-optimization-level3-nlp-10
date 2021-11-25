@@ -1,0 +1,131 @@
+input_channel: 3
+depth_multiple : [0.25, 0.5, 1.0, 1.5, 2.0] # categorical
+width_multiple : [0.25, 0.5, 1.0, 1.5, 2.0] # categorical
+
+max_num_stride: 5
+upper_stride: 2
+
+# if type of an item is list and consists of three values only,
+# it means [low, high, step]
+
+activation: ["ReLU", "Hardswish", "HardSigmoid", "Swish", "Pass"]
+num_modules: 7
+
+candidates: 
+  m1: ["Conv", "DWConv"] # module 1
+  m2: ["Conv", "DWConv", "InvertedResidualv2", "InvertedResidualv3", "Pass"] # m2
+  m3: ["Conv", "DWConv", "InvertedResidualv2", "InvertedResidualv3", "Pass"] # m3
+  m4: ["Conv", "DWConv", "InvertedResidualv2", "InvertedResidualv3", "Pass"] # m4
+  m5: ["Conv", "DWConv", "InvertedResidualv2", "InvertedResidualv3", "Pass"] # m5
+  m6: ["Conv", "DWConv", "InvertedResidualv2", "InvertedResidualv3", "Pass"] # m6
+  m7: ["Conv", "DWConv", "InvertedResidualv2", "InvertedResidualv3", "Pass"]  # m7
+
+repeats: 
+  m1: [1, 3, 1] # module 1 [low, high, step]
+  m2: [1, 5, 1] # module 2
+  m3: [1, 5, 1] # module 3
+  m4: [1, 5, 1] # module 4
+  m5: [1, 5, 1] # module 5
+  m6: [1, 5, 1] # module 6
+  m7: [1, 5, 1]  # module 7
+
+out_channels: 
+  m1: [16, 64, 16]   # m1 [low, high, step]
+  m2: [16, 128, 16]  # m2
+  m3: [16, 128, 16]  # m3
+  m4: [16, 128, 16]  # m4
+  m5: [16, 128, 16]  # m5
+  m6: [16, 128, 16]  # m6
+  m7: [16, 128, 16]  # m7
+
+stride: 
+  m1: [1, upper_stride, 1] # [low, high, step]
+  m2: [1, upper_stride, 1] 
+  m3: [1, upper_stride, 1] 
+  m4: [1, upper_stride, 1] 
+  m5: [1, upper_stride, 1] 
+  m6: [1, upper_stride, 1] 
+  m7: [1, upper_stride, 1]
+
+kernel_size:
+  m1: [1, 3, 1] # [low, high, step]
+  m2: [1, 3, 1] 
+  m3: [1, 3, 1] 
+  m4: [1, 3, 1]
+  m5: [1, 3, 1] 
+  m6: [1, 3, 1]
+  m7: [1, 3, 1]
+
+# a: defines belows only having "InvertedResidualv2" as candidates
+# start(a)
+c: # number of output channels
+  m2: [16, 32, 16] # [low, high, step]
+  m3: [16, 32, 16]
+  m4: [16, 32, 16]
+  m5: [16, 32, 16]
+  m6: [16, 32, 16]
+  m7: [16, 32, 16]
+
+t: # expansion factor
+  m2: [1, 4, 1] # [low, high, step]
+  m3: [1, 4, 1]
+  m4: [1, 4, 1]
+  m5: [1, 4, 1]
+  m6: [1, 4, 1]
+  m7: [1, 4, 1]
+# end(a)
+
+# b: defines belows only haveing "InvertedResidualv3" as candidates
+# start(b)
+v3_kernel:
+  m2: [3, 5, 2] # low, high, step
+  m3: [3, 5, 2]
+  m4: [3, 5, 2]
+  m5: [3, 5, 2]
+  m6: [3, 5, 2]
+  m7: [3, 5, 2]
+
+v3_t: # float
+  m2: [1.0, 6.0, 0.1] # low, high, step
+  m3: [1.0, 6.0, 0.1]
+  m4: [1.0, 6.0, 0.1]
+  m5: [1.0, 6.0, 0.1]
+  m6: [1.0, 6.0, 0.1]
+  m7: [1.0, 6.0, 0.1]
+
+v3_c:
+  m2: [16, 40, 8] # low, high, step
+  m3: [16, 40, 8]
+  m4: [16, 40, 8]
+  m5: [16, 40, 8]
+  m6: [16, 40, 8]
+  m7: [16, 40, 8]
+
+se:
+  m2: [0,1] # true or false (probably?)
+  m3: [0,1]
+  m4: [0,1]
+  m5: [0,1]
+  m6: [0,1]
+  m7: [0,1]
+
+hs:
+  m2: [0,1] # true or false (probably?)
+  m3: [0,1]
+  m4: [0,1]
+  m5: [0,1]
+  m6: [0,1]
+  m7: [0,1]
+
+# end(b)
+
+# classifier
+
+last_dim: [128, 1024, 128] # low, high, step
+
+classifier: [
+  [1, "Conv", [last_dim, 1, 1]],
+  [1, "GlobalAvgPool", []],
+  [1, "FixedConv", [6, 1, 1, null, 1, null]]
+]
+
