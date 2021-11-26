@@ -7,6 +7,10 @@
 # 2. worker 개수 8로 수정해주고 (completed) # dataloader 파일 수정 (n_workers = 8)
 # 3. 데이터 저장할 수 있도록 수정해야함 (completed)
 
+import warnings 
+
+warnings.filterwarnings('ignore')
+# warning 무시
 import optuna
 import torch
 import torch.nn as nn
@@ -23,6 +27,7 @@ import argparse
 import os
 import yaml
 import pickle
+import gc
 
 EPOCH = 100
 OBJ_CALLED = 0
@@ -270,13 +275,22 @@ def objective(trial: optuna.trial.Trial, device, study_name) -> Tuple[float, int
         verbose=1,
         model_path=RESULT_MODEL_PATH,
     )
+
+    error_flag = 0
+
+    try:
+        best_acc, best_f1 = trainer.train(train_loader, hyperparams["EPOCHS"]) 
+        loss, f1_score, acc_percent = trainer.test(model, test_dataloader=val_loader)
+        
+    except RuntimeError as e:
+        print(e)
+        f1_score = None
+        error_flag = 1
     
-    best_acc, best_f1 = trainer.train(train_loader, hyperparams["EPOCHS"]) 
-    loss, f1_score, acc_percent = trainer.test(model, test_dataloader=val_loader)
     params_nums = count_model_params(model)
 
     model_info(model, verbose=True)
-
+    
     summary = {"data":data_config, "model":model_config, "f1_score":f1_score, "param_nums": params_nums}
     
     results_path = os.path.join(RESULT_ROOT, study_name)
@@ -285,8 +299,12 @@ def objective(trial: optuna.trial.Trial, device, study_name) -> Tuple[float, int
     except:
         os.mkdir(results_path)
 
-    with open(os.path.join(results_path,str(OBJ_CALLED)) + ".pkl", "wb") as f:
-        pickle.dump(summary, f)
+    if error_flag == 0:
+        with open(os.path.join(results_path,str(OBJ_CALLED)) + ".pkl", "wb") as f:
+            pickle.dump(summary, f)
+    else:
+        with open(os.path.join(results_path,str(OBJ_CALLED)) + "(Error).pkl", "wb") as f:
+            pickle.dump(summary, f)
 
     return f1_score, params_nums, mean_time
 
@@ -345,7 +363,7 @@ def tune(gpu_id, study_name, n_trial, storage: str = None):
         load_if_exists=True,
     )
 
-    study.optimize(lambda trial: objective(trial, device, study_name), n_trials=n_trial)
+    study.optimize(lambda trial: objective(trial, device, study_name), n_trials=n_trial, callbacks = [lambda study, trial:gc.collect()])
 
     pruned_trials = [
         t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED
