@@ -27,3 +27,5 @@ def simple_augment_taco(
         ]
     )
 ```
+
+* 세부적인 parameter들은 추후에 모델 결정 후 최적화할 예정입니다
