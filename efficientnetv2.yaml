@@ -1,0 +1,24 @@
+input_channel: 3
+
+depth_multiple: 1.0
+width_multiple: 1.0
+
+backbone:
+    # [repeat, module, args]
+    # EfficientNetv2-s
+    # torch.Size([64, 1280, 1, 1]) torch.Size([1280, 10])
+    [
+        # Conv argument: [out_channel, kernel_size, stride, padding_size]
+        [1, Conv, [24, 3, 2]],
+        # repeat(n), MBConv: t, c, s, SE
+        [2, MBConvv2, [1,  24,  1, 0]],
+        [4, MBConvv2, [4,  48,  2, 0]],
+        [4, MBConvv2, [4,  64,  2, 0]],
+        [6, MBConvv2, [4, 128,  2, 1]],
+        [9, MBConvv2, [6, 160,  1, 1]],
+        [15, MBConvv2, [6, 256, 2, 1]],
+        [1, Conv, [1280, 1, 1]],
+        [1, GlobalAvgPool, []],
+        [1, Flatten, []],
+        [1, Linear, [10]],
+    ]
