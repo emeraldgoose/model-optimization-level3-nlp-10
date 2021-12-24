@@ -1,7 +1,7 @@
 # model-optimization-level3-nlp-10
 
 ## Baseline
-주어진 src 폴더는 베이스라인에 포함되었습니다.
+주어진 src 폴더는 베이스라인에 포함되어 있었습니다.
 
 `aug_optuna.py`는 베이스라인으로 제공된 `tune.py`에서 jiho님께서 다시 작성해서 모델을 찾는데 사용했습니다.
 
