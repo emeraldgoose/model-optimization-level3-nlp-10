@@ -32,7 +32,7 @@ class Model(nn.Module):
         self.model_parser = ModelParser(cfg=cfg, verbose=verbose)
         self.model = self.model_parser.model
 
-        self.initialize_weights()
+        # self.initialize_weights()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward."""
