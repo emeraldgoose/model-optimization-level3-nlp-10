@@ -39,6 +39,8 @@ def simple_augment_taco(
 - Private Inference Time 55.7934
 
 ## EfficientNetv2
+`mbconvv2.py`는 EfficientNetv2의 fused-MBConv 모듈입니다.  
+
 `efficientnetv2.yaml`은 configs/model/에 넣어주시고 `mbconvv2.py`는 src/modules에 넣고 `model.py`는 src에 넣어주시면 됩니다.
 
 그리고 modules에 `__init__.py`에 아래 항목들을 추가해주세요
@@ -50,7 +52,7 @@ __all__ = [
 ]
 ```
 
-## Pruning
+## pruning.py
 모델 최적화 기법 중 Pruning을 시도한 파일입니다.
 
 torch에서 제공하는 `torch.nn.utils.prune` 도구를 사용했습니다.
